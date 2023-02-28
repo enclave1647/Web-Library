@@ -1,35 +1,66 @@
+// AJAX запросы для получения краткого описания и изображения книги
 function get_more_book_info () {
     let name = this.innerText;
-    let short_text = '';
 
-    let request = new XMLHttpRequest();
+    let request_info = new XMLHttpRequest();
+    let request_img = new XMLHttpRequest();
 
-    request.open('GET', `engine/showDetails.php?book_name=${name}`, true);
-    request.responseType = 'json';
-    request.send();
-    request.onload = function () {
-        if (request.status == 200) {
-            // Получили ответ
-            let body = request.response;
-            // JSON уже распарсен
-            short_text = body.short_text;
+    request_info.open('GET', `engine/getBookInfo.php?book_name=${name}`, true);
+    request_img.open('GET', `engine/getBookImage.php?book_name=${name}`, true);
 
-            // Создание элемента <p> для отображения короткого описания книги
-            let p = document.createElement('p');
-            p.id = 'short-text';
-            p.innerText = short_text;
-            document.querySelector('#main-table').after(p);
+    request_info.responseType = 'json';
+    request_img.responseType = 'blob';
 
-        } else {
-            console.log(`Ошибка выволнения запроса`);
-        }
-    };
+    request_info.send();
+    request_img.send();
 
-
-
-
+    request_info.onload = function () { get_info(request_info); }
+    request_img.onload = function () { get_image(request_img); }
 }
 
+// Получение информации о книги с сервера в json
+function get_info(inner_request = new XMLHttpRequest()) {
+    if (inner_request.status === 200) {
+		
+        // Получили ответ (краткое описание книги в JSON)
+        let body = inner_request.response; // JSON уже распарсен, в body - текст (short_text)
+		// Получили тег <p> для вставки краткого описания
+        let p_descr = document.querySelector('#descr');
+		
+		// Если полученный JSON не пустой
+		if (body) {
+			// Заполняем элемент <p> для отображения краткого описания книги
+			p_descr.innerText = body;
+		} else p_descr.innerText = "Здесь будет краткое описание книги..."; // Иначе - заглушка
+		
+    } else {
+        console.log(`Ошибка выволнения запроса`);
+    }
+}
+
+// Получение изображения книги с сервера в blob
+function get_image(inner_request = new XMLHttpRequest()) {
+    if (inner_request.status === 200) {
+
+        // Получили ответ (изображение книги в blob)
+        let body = inner_request.response;
+        // Получили тег <img> для вставки пути к blob
+        let img = document.getElementById('img-book');
+
+        // Если полученный blob не пустой
+        if (body.size > 0) {
+            // Получаем путь к blob
+            let blob_img_src = URL.createObjectURL(body);
+            // И подставляем его в scr тега <img>
+            img.src = blob_img_src;
+        } else img.src = "#"; // Иначе - заглушка #
+
+    } else {
+        console.log(`Ошибка выволнения запроса`);
+    }
+}
+
+// После загрузки DOM дерева
 document.addEventListener("DOMContentLoaded", function () {
 
     // Получаем основную форму
@@ -59,8 +90,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Привязываем контекс params[0] к функции get_more_book_info
                 // В теле функции get_more_book_info: this = params[0]
                 let get_more = get_more_book_info.bind(params[0]);
-                get_more();
-
+                // Получение от сервера и вставка в контент:
+				// изображения книги (в blob) и краткого описания (в json)
+				get_more();
+				
+				// Получили тег <img> для вставки alt картинки
+				let img = document.getElementById('img-book');
+				img.alt = "Книга \"" + params[0].innerText + "\"";
             });
         }
     }

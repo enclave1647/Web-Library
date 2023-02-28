@@ -41,5 +41,6 @@ function get_book_name() {
 /* Получаем жанр книги */
 function get_book_genre() {
     global $book;
-    echo $book["Genre"];
+	if ($book["Genre"]) echo $book["Genre"];
+	else echo "-----";
 }

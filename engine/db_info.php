@@ -2,9 +2,8 @@
 
 /* Данные для подключения к БД */
 
-$hostname = 'localhost';
-$user = 'root';
-$password = 'admin';
-$database = 'library_db';
+const hostname = 'localhost';
+const user = 'root';
+const password = 'admin';
+const database = 'library_db';
 
-$db_connect = '';

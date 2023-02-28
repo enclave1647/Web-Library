@@ -3,7 +3,7 @@
 require_once "db_info.php";
 
 /* Устанавливаем соединение с БД */
-$db_connect = new mysqli($hostname, $user, $password, $database);
+$db_connect = new mysqli(hostname, user, password, database);
 
 if ($db_connect == false) {
     echo "Ошибка подключения к БД: " . $db_connect->connect_error;

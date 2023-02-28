@@ -38,7 +38,8 @@
         </tr>
     <?php endwhile ?>
 </table>
-
+<img id="img-book" src="#">
+<p id="descr"></p>
 
 </body>
 </html>
