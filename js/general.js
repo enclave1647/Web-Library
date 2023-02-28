@@ -21,7 +21,7 @@ function get_more_book_info () {
             document.querySelector('#main-table').after(p);
 
         } else {
-            console.log(`Ошибка`);
+            console.log(`Ошибка выволнения запроса`);
         }
     };
 
