@@ -2,62 +2,85 @@
 function get_more_book_info () {
     let name = this.innerText;
 
-    let request_info = new XMLHttpRequest();
-    let request_img = new XMLHttpRequest();
+    /**
+     * Промисы
+     **/
 
-    request_info.open('GET', `engine/getBookInfo.php?book_name=${name}`, true);
-    request_img.open('GET', `engine/getBookImage.php?book_name=${name}`, true);
+    // Для получения информации о книге
+    let p_get_book_info = new Promise((resolve, reject) => {
+       let xhr = new XMLHttpRequest();
+       xhr.open('GET',`engine/getBookInfo.php?book_name=${name}`,true);
+       xhr.responseType = 'json';
+       xhr.send();
+       xhr.onload = () => {
+           if (xhr.status === 200) {
+               resolve(xhr.response);
+           }
+           else reject (new Error('Ошибка выполения запроса GET для получения краткого содержания книги'))
+       }
+    });
 
-    request_info.responseType = 'json';
-    request_img.responseType = 'blob';
+    let p_get_book_img = new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', `engine/getBookImage.php?book_name=${name}`,true);
+        xhr.responseType = 'blob';
+        xhr.send();
 
-    request_info.send();
-    request_img.send();
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                resolve(xhr.response);
+            }
+            else reject(new Error('Ошибка выполения запроса GET для получения изображения книги'));
+        }
+    });
+    // Promise.all - для вывода результата, если все промисы завершились успешно (resolve())
+    // Promise.allSettled - для вывода результата, даже если какой-то промис завершился с ошибкой (reject())
+    // В Promise.allSettled другой вывод результата (через res[0].value, еще есть статус res[0].status - ошибка или нет)
+    Promise.allSettled([p_get_book_img, p_get_book_info]).then(responses => {
 
-    request_info.onload = function () { get_info(request_info); }
-    request_img.onload = function () { get_image(request_img); }
-}
-
-// Получение информации о книги с сервера в json
-function get_info(inner_request = new XMLHttpRequest()) {
-    if (inner_request.status === 200) {
-		
-        // Получили ответ (краткое описание книги в JSON)
-        let body = inner_request.response; // JSON уже распарсен, в body - текст (short_text)
-		// Получили тег <p> для вставки краткого описания
-        let p_descr = document.querySelector('#descr');
-		
-		// Если полученный JSON не пустой
-		if (body) {
-			// Заполняем элемент <p> для отображения краткого описания книги
-			p_descr.innerText = body;
-		} else p_descr.innerText = "Здесь будет краткое описание книги..."; // Иначе - заглушка
-		
-    } else {
-        console.log(`Ошибка выволнения запроса`);
-    }
-}
-
-// Получение изображения книги с сервера в blob
-function get_image(inner_request = new XMLHttpRequest()) {
-    if (inner_request.status === 200) {
-
-        // Получили ответ (изображение книги в blob)
-        let body = inner_request.response;
+        // Получаем тег <p> для вставки краткого описания
+        let tag_p = document.getElementById('descr');
         // Получили тег <img> для вставки пути к blob
-        let img = document.getElementById('img-book');
+        let tag_img = document.getElementById('img-book');
 
-        // Если полученный blob не пустой
-        if (body.size > 0) {
-            // Получаем путь к blob
-            let blob_img_src = URL.createObjectURL(body);
-            // И подставляем его в scr тега <img>
-            img.src = blob_img_src;
-        } else img.src = "#"; // Иначе - заглушка #
+        // Проверка: Если ли ошибка при получении изображения с сервера?
+        if(responses[0].status === 'rejected') {
+            console.log(responses[0].reason);
+            tag_img.src = "#"; // При ошибке - заглушка #
+        } else {
+            // Если ошибки нет, то
+            // Изображение (в blob)
+            let img = responses[0].value;
+            // Если полученный blob не пустой
+            if (img.size > 0) {
+                // Добавляем в тег img путь к blob
+                tag_img.src = URL.createObjectURL(img);
+            } else tag_img.src = "#"; // Иначе - заглушка #
+        }
 
-    } else {
-        console.log(`Ошибка выволнения запроса`);
-    }
+        // Проверка: Если ли ошибка при получении краткого описания с сервера?
+        if (responses[1].status === 'rejected') {
+            console.log(responses[1].reason);
+            tag_p.innerText = "Здесь будет краткое описание книги..."; // При ошибке - заглушка (...)
+        } else {
+            // Если ошибки нет, то
+            // Описание (в json)
+            let text = responses[1].value;
+
+            //Если полученный JSON не пустой
+            if (text) {
+                // Заполняем элемент <p> для отображения краткого описания книги
+                tag_p.innerText = text;
+            } else tag_p.innerText = "Здесь будет краткое описание книги..."; // Иначе - заглушка
+        }
+
+    })
+        .catch(error => console.log(error.message))
+        .finally()
+
+    /**
+     * END
+     * */
 }
 
 // После загрузки DOM дерева
