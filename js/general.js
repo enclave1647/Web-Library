@@ -9,7 +9,7 @@ function get_more_book_info () {
     // Для получения информации о книге
     let p_get_book_info = new Promise((resolve, reject) => {
        let xhr = new XMLHttpRequest();
-       xhr.open('GET',`engine/getBookInfo.php?book_name=${name}`,true);
+       xhr.open('GET',`engine/get_book_attr.php?book_name=${name}&view=shortDescription`,true);
        xhr.responseType = 'json';
        xhr.send();
        xhr.onload = () => {
@@ -22,7 +22,7 @@ function get_more_book_info () {
 
     let p_get_book_img = new Promise((resolve, reject) => {
         let xhr = new XMLHttpRequest();
-        xhr.open('GET', `engine/getBookImage.php?book_name=${name}`,true);
+        xhr.open('GET', `engine/get_book_attr.php?book_name=${name}&view=image`,true);
         xhr.responseType = 'blob';
         xhr.send();
 
@@ -33,6 +33,7 @@ function get_more_book_info () {
             else reject(new Error('Ошибка выполения запроса GET для получения изображения книги'));
         }
     });
+
     // Promise.all - для вывода результата, если все промисы завершились успешно (resolve())
     // Promise.allSettled - для вывода результата, даже если какой-то промис завершился с ошибкой (reject())
     // В Promise.allSettled другой вывод результата (через res[0].value, еще есть статус res[0].status - ошибка или нет)
@@ -46,7 +47,7 @@ function get_more_book_info () {
         // Проверка: Если ли ошибка при получении изображения с сервера?
         if(responses[0].status === 'rejected') {
             console.log(responses[0].reason);
-            tag_img.src = "#"; // При ошибке - заглушка #
+            tag_img.src = ""; // При ошибке
         } else {
             // Если ошибки нет, то
             // Изображение (в blob)
@@ -55,7 +56,13 @@ function get_more_book_info () {
             if (img.size > 0) {
                 // Добавляем в тег img путь к blob
                 tag_img.src = URL.createObjectURL(img);
-            } else tag_img.src = "#"; // Иначе - заглушка #
+            } else {
+                    // Если в scr был blob - убираем его
+                    if (tag_img.src.length > 2) {URL.revokeObjectURL(tag_img.src);
+                        console.log('img revoked');}
+                    // И ставим пустой путь
+                    tag_img.src = "";
+                }
         }
 
         // Проверка: Если ли ошибка при получении краткого описания с сервера?
@@ -66,7 +73,6 @@ function get_more_book_info () {
             // Если ошибки нет, то
             // Описание (в json)
             let text = responses[1].value;
-
             //Если полученный JSON не пустой
             if (text) {
                 // Заполняем элемент <p> для отображения краткого описания книги
@@ -86,7 +92,7 @@ function get_more_book_info () {
 // После загрузки DOM дерева
 document.addEventListener("DOMContentLoaded", function () {
 
-    // Получаем основную форму
+    // Получаем основную форму (id = main_form)
     let form = document.forms.main_form;
 
     // Получаем строки с книгами
